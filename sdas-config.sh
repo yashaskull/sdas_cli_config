@@ -62,31 +62,48 @@ do_storage_usage()
   $storage_usage" 30 90
 }
 
-do_cpu_temperature()
+do_vcgencmd()
 {
-  #deg_c=$\xe2\x84\x83
-  whiptail --title "Seismic Data Acquisition System (SDAS) Coniguration Interface" --msgbox "RPi CPU temperature: Deg C" 10 70
+  
+  temp=$(vcgencmd measure_temp | sed -r 's/.{5}//')
+  cpu_core_voltage=$(vcgencmd measure_volts | sed -r 's/.{5}//')
+  sdram_core_voltage=$(vcgencmd measure_volts sdram_c | sed -r 's/.{5}//')
+  throttle_state=$(vcgencmd get_throttled | sed -r 's/.{10}//')
+  arm_freq=$(vcgencmd measure_clock arm | sed -r 's/.{14}//')
+  arm_freq_mhz=$((arm_freq/1000000))
+  
+  whiptail --title "Seismic Data Acquisition System (SDAS) Coniguration Interface" --msgbox "RPi general command service usage\n
+  CPU temperature: $temp\n
+  CPU core voltage: $cpu_core_voltage\n
+  SDRAM core voltage: $sdram_core_voltage\n
+  CPU throttle state: $throttle_state\n
+  CPU (arm) clock freq: $arm_freq_mhz"MHz"" 20 70
+  
 }
 do_performance()
 {   
-    FUN=$(whiptail --title "Seismic Data Acquisition System (SDAS) Coniguration Interface" --menu "Performance Options" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Back --ok-button Select \
-        "P1 Memory" "System memory stats" \
-        "P2 CPU" "System CPU and memory usage" \
-        "P3 Storage" "System storage usage" \
-        "P4 Temperature" "CPU temperature" \
-        3>&1 1>&2 2>&3)
-    RET=$?
-    if [$RET -eq 1 ]; then
+  while true; do
+      FUN=$(whiptail --title "Seismic Data Acquisition System (SDAS) Coniguration Interface" --menu "Performance Options" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Back --ok-button Select \
+          "P1 Memory" "System memory usage" \
+          "P2 CPU" "System CPU and memory usage" \
+          "P3 Storage" "System storage usage" \
+          "P4 RPi vcgencmd" "View RPi general command service" \
+          3>&1 1>&2 2>&3)
+      RET=$?
+      if [$RET -eq 1 ]; then
+          return 0
+      elif [ $RET -eq 0 ]; then
+          case "$FUN" in
+              P1\ *) do_memory ;;
+              P2\ *) do_cpu ;;
+              P3\ *) do_storage_usage ;;
+              P4\ *) do_vcgencmd ;;
+              *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
+          esac || whiptail --msgbox "There was an error running option $FUN" 20 60 1
+      else
         return 0
-    elif [ $RET -eq 0 ]; then
-        case "$FUN" in
-            P1\ *) do_memory ;;
-            P2\ *) do_cpu ;;
-            P3\ *) do_storage_usage ;;
-            P4\ *) do_cpu_temperature ;;
-            *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
-        esac || whiptail --msgbox "There was an error running option $FUN" 20 60 1
-    fi
+      fi
+  done
 }
 #
 # Interactive use loop
@@ -101,7 +118,7 @@ while true; do
     "5 Timing" "View or edit the SDAS timing functionality" \
     "6 Data Storage" "Change how data is stored on the SDAS" \
     "7 Process" "View key processes running on the SDAS" \
-    "8 Performance" "View performance parameters of the SDAS" \
+    "8 System performance" "View operating system performance stats" \
     3>&1 1>&2 2>&3)
   RET=$?
   if [ $RET -eq 1 ]; then
