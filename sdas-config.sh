@@ -1,8 +1,11 @@
+#!/bin/bashy
+
+
 calc_wt_size() {
   # NOTE: it's tempting to redirect stderr to /dev/null, so supress error 
   # output from tput. However in this case, tput detects neither stdout or 
   # stderr is a tty and so only gives default 80, 24 values
-  WT_HEIGHT=17
+  WT_HEIGHT=18
   WT_WIDTH=$(tput cols)
 
   if [ -z "$WT_WIDTH" ] || [ "$WT_WIDTH" -lt 60 ]; then
@@ -11,9 +14,10 @@ calc_wt_size() {
   if [ "$WT_WIDTH" -gt 178 ]; then
     WT_WIDTH=120
   fi
-  WT_MENU_HEIGHT=$(($WT_HEIGHT-7))
+  WT_MENU_HEIGHT=$(($WT_HEIGHT-10))
 }
 
+# Restart
 do_restart() 
 {
     if (whiptail --yesno "Are you sure you want to restart the SDAS ?" 20 60 1); then
@@ -23,6 +27,7 @@ do_restart()
     fi
 }
 
+# Shutdown
 do_shutdown()
 {
     if (whiptail --yesno "Are you sure you want to shutdown the SDAS ?" 20 60 1); then
@@ -32,7 +37,92 @@ do_shutdown()
     fi
 }
 
-# Performance functions
+# Network functions
+do_network()
+{
+    while true; do
+      FUN=$(whiptail --title "Seismic Data Acquisition System (SDAS) Coniguration Interface" --menu "\nSelect networking option below" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Back --ok-button Select \
+          "N1 DHCP"   "Automatically configure network as DHCP" \
+          "N2 STATIC"   "Manually assign static IP address" \
+          "N3 Restart"   "Restart network interface" \
+          3>&1 1>&2 2>&3)
+      RET=$?
+      if [$RET -eq 1 ]; then
+          return 0
+      elif [ $RET -eq 0 ]; then
+          case "$FUN" in
+              N1\ *) do_dhcp ;;
+              N2\ *) do_static ;;
+              N3\ *) do_network_restart ;;
+              *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
+          esac || whiptail --msgbox "There was an error running option $FUN" 20 60 1
+      else
+        return 0
+      fi
+  done
+}
+
+do_network_restart()
+{
+    # get networking interface names
+    array_network_interface=()
+    for iface in $(ifconfig | cut -d ' ' -f1| tr ':' '\n' | awk NF)
+    do
+      array_network_interface+=("$iface")
+      array_network_interface+=("")
+    done
+  
+    #array_network_interface+=("All")
+    #array_network_interface+=("")
+    
+    while true; do
+        FUN=$(whiptail --title "Seismic Data Acquisition System (SDAS) Coniguration Interface" --menu "\nSelect network interface to restart" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Back --ok-button Select  \
+            "${array_network_interface[@]}" \
+            "All" "Restart all network interfaces" \
+            3>&1 1>&2 2>&3)
+        RET=$?
+        if [$RET -eq 1 ]; then
+            return 0
+        elif [ $RET -eq 0 ]; then
+            case "$FUN" in
+                P1\ *) do_memory ;;
+                P2\ *) do_cpu ;;
+                P3\ *) do_storage_usage ;;
+                P4\ *) do_vcgencmd ;;
+                *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
+            esac || whiptail --msgbox "There was an error running option $FUN" 20 60 1
+        else
+          return 0
+        fi
+    done
+}
+
+# System performance functions
+do_performance()
+{   
+  while true; do
+      FUN=$(whiptail --title "Seismic Data Acquisition System (SDAS) Coniguration Interface" --menu "\nSelect system performance option below" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Back --ok-button Select \
+          "P1 Memory" "System memory usage" \
+          "P2 CPU" "System CPU and memory usage" \
+          "P3 Storage" "System storage usage" \
+          "P4 RPi vcgencmd" "View RPi general command service" \
+          3>&1 1>&2 2>&3)
+      RET=$?
+      if [$RET -eq 1 ]; then
+          return 0
+      elif [ $RET -eq 0 ]; then
+          case "$FUN" in
+              P1\ *) do_memory ;;
+              P2\ *) do_cpu ;;
+              P3\ *) do_storage_usage ;;
+              P4\ *) do_vcgencmd ;;
+              *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
+          esac || whiptail --msgbox "There was an error running option $FUN" 20 60 1
+      else
+        return 0
+      fi
+  done
+}
 do_memory()
 {  
     header=$(free -h | sed -n '1'p)
@@ -80,40 +170,16 @@ do_vcgencmd()
   CPU (arm) clock freq: $arm_freq_mhz"MHz"" 20 70
   
 }
-do_performance()
-{   
-  while true; do
-      FUN=$(whiptail --title "Seismic Data Acquisition System (SDAS) Coniguration Interface" --menu "Performance Options" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Back --ok-button Select \
-          "P1 Memory" "System memory usage" \
-          "P2 CPU" "System CPU and memory usage" \
-          "P3 Storage" "System storage usage" \
-          "P4 RPi vcgencmd" "View RPi general command service" \
-          3>&1 1>&2 2>&3)
-      RET=$?
-      if [$RET -eq 1 ]; then
-          return 0
-      elif [ $RET -eq 0 ]; then
-          case "$FUN" in
-              P1\ *) do_memory ;;
-              P2\ *) do_cpu ;;
-              P3\ *) do_storage_usage ;;
-              P4\ *) do_vcgencmd ;;
-              *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
-          esac || whiptail --msgbox "There was an error running option $FUN" 20 60 1
-      else
-        return 0
-      fi
-  done
-}
+
 #
 # Interactive use loop
 #
 calc_wt_size
 while true; do
-  FUN=$(whiptail --title "Seismic Data Acquisition System (SDAS) Coniguration Interface" --menu "Choose option below:" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Finish --ok-button Select \
+  FUN=$(whiptail --title "Seismic Data Acquisition System (SDAS) Coniguration Interface" --menu "\nSelect configuration option below" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Finish --ok-button Select \
     "1 Restart" "Restart the SDAS" \
     "2 Shutdown" "Shutdown the SDAS" \
-    "3 Network" "Change networking configuration" \
+    "3 Network" "Change network configuration" \
     "4 Station" "Edit station information" \
     "5 Timing" "View or edit the SDAS timing functionality" \
     "6 Data Storage" "Change how data is stored on the SDAS" \
