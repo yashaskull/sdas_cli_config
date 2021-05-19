@@ -60,7 +60,17 @@ do_network()
         return 0
       fi
   done
+
 }
+#do_dhcp()
+#{
+
+#}
+
+#do_static()
+#{
+  
+#}
 
 do_network_restart()
 {
@@ -76,7 +86,7 @@ do_network_restart()
     #array_network_interface+=("")
     
     while true; do
-        FUN=$(whiptail --title "Seismic Data Acquisition System (SDAS) Coniguration Interface" --menu "\nSelect network interface to restart" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Back --ok-button Select  \
+        network_interface_choice=$(whiptail --title "Seismic Data Acquisition System (SDAS) Coniguration Interface" --menu "\nSelect network interface to restart" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Back --ok-button Select  \
             "${array_network_interface[@]}" \
             "All" "Restart all network interfaces" \
             3>&1 1>&2 2>&3)
@@ -84,18 +94,16 @@ do_network_restart()
         if [$RET -eq 1 ]; then
             return 0
         elif [ $RET -eq 0 ]; then
-            case "$FUN" in
-                P1\ *) do_memory ;;
-                P2\ *) do_cpu ;;
-                P3\ *) do_storage_usage ;;
-                P4\ *) do_vcgencmd ;;
-                *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
-            esac || whiptail --msgbox "There was an error running option $FUN" 20 60 1
+            # perform restart on interface chosen. Then exit
+            echo "Performing network restart on $network_interface_choice"
+            ip link set $network_interface_choice down && ip link set $network_interface_choice up 
+            #exit 1
         else
           return 0
         fi
     done
 }
+
 
 # System performance functions
 do_performance()
