@@ -1,4 +1,4 @@
-#!/bin/bashy
+#!/bin/bash
 
 
 calc_wt_size() {
@@ -20,7 +20,7 @@ calc_wt_size() {
 # Restart
 do_restart() 
 {
-    if (whiptail --yesno "Are you sure you want to restart the SDAS ?" 20 60 1); then
+    if (whiptail --title "Seismic Data Acquisition System (SDAS) Coniguration Interface" --yesno "Are you sure you want to restart the SDAS ?" 20 70 1); then
         echo "Restarting SDAS" # Will add sudo reboot 
     else
         echo "Not restarting the sdas"
@@ -30,7 +30,7 @@ do_restart()
 # Shutdown
 do_shutdown()
 {
-    if (whiptail --yesno "Are you sure you want to shutdown the SDAS ?" 20 60 1); then
+    if (whiptail --title "Seismic Data Acquisition System (SDAS) Coniguration Interface" --yesno "Are you sure you want to shutdown the SDAS ?" 20 70 1); then
         echo "Shutting down the SDAS" # Will add sudo shutdown now 
     else
         echo "Not shutting down the sdas"
@@ -104,6 +104,14 @@ do_network_restart()
     done
 }
 
+do_data_storage()
+{
+  if (whiptail --title "Seismic Data Acquisition System (SDAS) Coniguration Interface" --yesno "Write data into miniSEED(MSEED) files stored on a external drive ?" 20 70 1); then
+    echo "Writing mseed files" # Will add sudo reboot 
+  else
+    echo "Not writing mseed files"
+  fi
+}
 
 # System performance functions
 do_performance()
@@ -202,6 +210,7 @@ while true; do
       1\ *) do_restart ;;
       2\ *) do_shutdown ;;
       3\ *) do_network ;;
+      6\ *) do_data_storage ;;
       8\ *) do_performance;;
       *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
     esac || whiptail --msgbox "There was an error running option $FUN" 20 60 1
