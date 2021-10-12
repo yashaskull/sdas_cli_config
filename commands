@@ -1,1 +1,5 @@
+# Writing to config file
 sed -i 's/\(myname *= *\).*/\1"stefan"/' test.cfg
+
+# Reading from config file
+awk '/key/ {split($1,a,"=");print a[2]}' input_file
