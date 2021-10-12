@@ -1,0 +1,1 @@
+sed -i 's/\(myname *= *\).*/\1"stefan"/' test.cfg
