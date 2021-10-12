@@ -106,7 +106,9 @@ do_network_restart()
 
 do_data_storage()
 {
-  if (whiptail --title "Seismic Data Acquisition System (SDAS) Coniguration Interface" --yesno "Write data into miniSEED(MSEED) files stored on a external drive ?" 20 70 1); then
+  curr_data_config=12
+
+  if (whiptail --title "Seismic Data Acquisition System (SDAS) Coniguration Interface" --yesno "Data Storage Configuration\n\nData is stored in memory as 512-byte miniSEED (MSEED) packets.\n\nOptionally, it can be written into 1 hour long MSEED files stored on an external drive.\n\nCurrent data storage configuration: $curr_data_config \n\nWould you like data to be stored on an external drive ?" 20 70 1); then
     echo "Writing mseed files" # Will add sudo reboot 
   else
     echo "Not writing mseed files"
